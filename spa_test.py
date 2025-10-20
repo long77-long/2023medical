@@ -1,45 +1,14 @@
-import sqlite3
 import os
 import sys
 import webbrowser
 from http.server import HTTPServer, SimpleHTTPRequestHandler
-import os
-import webbrowser
-from http.server import HTTPServer, SimpleHTTPRequestHandler
 
-# 原有学生信息添加功能
-conn = sqlite3.connect('db.sqlite3')
-cursor = conn.cursor()
-
-# 创建学生表（如果不存在）
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS students (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        student_id TEXT NOT NULL UNIQUE
-    )
-''')
-
-# 插入学生信息（龙琪琪+20231201009）
-try:
-    cursor.execute(
-        "INSERT OR IGNORE INTO students (name, student_id) VALUES (?, ?)",
-        ('龙琪琪', '20231201009')
-    )
-    conn.commit()
-    print('学生信息已添加')
-except sqlite3.Error as e:
-    print(f"数据库操作错误: {e}")
-finally:
-    conn.close()
-
-# SPA测试服务器功能
-class MyHandler(SimpleHTTPRequestHandler):
+class SPATestHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
         # 处理SPA的路由请求
         if self.path.startswith('/sections/'):
             section_num = self.path.split('/')[-1]
-            # 提供更丰富的Section内容
+            # 提供英文内容，避免编码问题
             texts = [
                 '<h2>Section 1 Content</h2><p>This is the detailed content of section 1, loaded asynchronously via AJAX.</p><p>Single Page Application can update this content without refreshing the entire page.</p>',
                 '<h2>Section 2 Content</h2><p>This is the detailed content of section 2, demonstrating the dynamic loading feature of SPA.</p><p>Click different buttons to switch and display different content.</p>',
@@ -93,61 +62,23 @@ class MyHandler(SimpleHTTPRequestHandler):
         return
 
 # 启动测试服务器
-def start_test_server():
-    print("\n要测试SPA功能，请运行以下命令：")
-    print("python add_student.py --test-spa")
+def run_server():
+    port = 8000
+    server_address = ('', port)
+    httpd = HTTPServer(server_address, SPATestHandler)
+    
+    print(f"\nSPA测试服务器启动成功！")
+    print(f"服务器运行在 http://localhost:{port}/")
+    print("按 Ctrl+C 停止服务器")
+    
+    # 自动打开浏览器
+    webbrowser.open(f'http://localhost:{port}/')
+    
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("\n服务器已停止")
+        httpd.server_close()
 
 if __name__ == '__main__':
-    # 检查是否以测试模式运行
-    if len(sys.argv) > 1 and sys.argv[1] == '--test-spa':
-        # 设置当前目录为根目录
-        os.chdir(os.path.dirname(os.path.abspath(__file__)))
-        server_address = ('', 8000)
-        httpd = HTTPServer(server_address, MyHandler)
-        print('启动测试服务器在 http://localhost:8000')
-        print('请访问 http://localhost:8000 来测试SPA功能')
-        webbrowser.open('http://localhost:8000')
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            print('\n服务器关闭')
-            httpd.server_close()
-    else:
-        start_test_server()
-
-# 连接到SQLite数据库（如果不存在则创建）
-conn = sqlite3.connect('db.sqlite3')
-cursor = conn.cursor()
-
-# 创建students表（如果不存在）
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS students (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    student_id TEXT NOT NULL UNIQUE
-)
-''')
-
-# 插入学生信息
-student_name = '龙琪琪'
-student_id = '20231201009'
-
-try:
-    cursor.execute(
-        "INSERT INTO students (name, student_id) VALUES (?, ?)",
-        (student_name, student_id)
-    )
-    conn.commit()
-    print(f"成功添加学生信息: {student_name} - {student_id}")
-    
-    # 验证数据是否已添加
-    cursor.execute("SELECT * FROM students WHERE student_id = ?", (student_id,))
-    result = cursor.fetchone()
-    if result:
-        print(f"数据库中已存在该学生信息: {result[1]} - {result[2]}")
-    
-except sqlite3.IntegrityError:
-    print(f"学生ID {student_id} 已存在于数据库中")
-finally:
-    # 关闭连接
-    conn.close()
+    run_server()

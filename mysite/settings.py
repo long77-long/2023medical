@@ -6,4 +6,5 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'medical',  # 添加我们的应用
+    'spa_app',  # 添加SPA应用
 ]
